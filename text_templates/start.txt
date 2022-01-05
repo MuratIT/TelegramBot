@@ -1,1 +1,1 @@
-Привет {{ first_name }}\!
+Привет {{ first_name }}!

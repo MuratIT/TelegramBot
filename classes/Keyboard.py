@@ -41,8 +41,8 @@ class Keyboard:
                 inline_btn = InlineKeyboardButton(item['title'], callback_data=callback_data, url=url)
                 inline_kb.add(inline_btn)
             elif type(item) == list:
-                s = self.__listInlineKeyboardButton(item)
-                inline_kb.row(*s)
+                list_inline_keyboard_button = self.__listInlineKeyboardButton(item)
+                inline_kb.row(*list_inline_keyboard_button)
         return inline_kb
 
     def reply(self, lists: list):
