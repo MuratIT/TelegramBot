@@ -31,7 +31,7 @@ ___
 **This folder is intended for files from which a certain text is taken, which subsequently passes through the Jinja2 template engine.**
 ### `handlers`
 **All files with bot event handlers are stored in this folder**
-## `classes`
+### `classes`
 **Modules for stable operation of the bot are stored in this folder, and you can also add your own modules there, which later you will just need to connect and thus remove the functionality.**
 ___
 ## The bot already knows how to
