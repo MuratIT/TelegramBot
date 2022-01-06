@@ -21,6 +21,7 @@ ___
     - `db.py`
     - `Keyboard.py`
     - `templates.py`
+    - `classes_db`
 ___
 ### `init.py`
 **The bot initialization file into which you import all modules from the classes folder, as well as the main libraries and modules for the bot to work**
@@ -31,8 +32,11 @@ ___
 **This folder is intended for files from which a certain text is taken, which subsequently passes through the Jinja2 template engine.**
 ### `handlers`
 **All files with bot event handlers are stored in this folder**
-### `classes`
-**Modules for stable operation of the bot are stored in this folder, and you can also add your own modules there, which later you will just need to connect and thus remove the functionality.**
+- ### `classes`
+  - **Modules for stable operation of the bot are stored in this folder, and you can also add your own modules there, which later you will just need to connect and thus remove the functionality.**
+    - ### `classes_db`
+      - **This folder contains files with classes for creating a table and methods for interacting with tables.**
+
 ___
 ## The bot already knows how to
 - **Remembers users in the database, namely their ID**
