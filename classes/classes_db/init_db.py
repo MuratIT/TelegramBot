@@ -15,7 +15,7 @@ class InitDB:
         return d
 
     @staticmethod
-    def __formatReturn(aw: any, formats: str):
+    def __fetchReturn(aw: any, formats: str):
         if formats == 'fetchone':
             return aw.fetchone()
         elif formats == 'fetchall':
@@ -25,7 +25,7 @@ class InitDB:
             return aw_arr
         return None
 
-    def connectExecute(self, sql: str, temp: tuple = tuple(), commit: bool = True, formats: str = 'fetchone'):
+    def connectExecute(self, sql: str, temp: tuple = tuple(), commit: bool = True, fetch: str = None):
         with sqlite3.connect(f'{self.__name}.db') as connect:
             try:
                 connect.row_factory = self.dict_factory
@@ -35,6 +35,6 @@ class InitDB:
                 if commit:
                     connect.commit()
 
-                return self.__formatReturn(aw, formats)
+                return self.__fetchReturn(aw, fetch)
             except sqlite3.DatabaseError as err:
                 self.log_init_db.error(err)

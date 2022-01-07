@@ -14,29 +14,29 @@ class PostsDB(InitDB):
                                checked VARCHAR(255) NOT NULL,
                                time VARCHAR(255) NOT NULL,
                                PRIMARY KEY(time));
-                            """, formats='')
+                            """)
 
     def insertPosts(self, text: str, checked: str, time: str, media: str = 'false:none', reply_markup: str = 'false'):
         select = self.selectPosts(time)
         if not select:
             sql = 'INSERT INTO posts (text, media, reply_markup, checked, time) VALUES (?, ?, ?, ?, ?)'
             temp = (text, media, reply_markup, checked, time)
-            self.connectExecute(sql=sql, temp=temp, formats=str())
+            self.connectExecute(sql=sql, temp=temp)
             return True
         return False
 
     def updatePostsChecked(self, checked: str, time: str):
         sql = 'UPDATE posts SET checked=? WHERE time=?'
         temp = (checked, time)
-        self.connectExecute(sql=sql, temp=temp, formats=str())
+        self.connectExecute(sql=sql, temp=temp)
 
     def selectPosts(self, time: str):
         sql = 'SELECT * FROM posts WHERE time=?'
         temp = (time,)
-        return self.connectExecute(sql=sql, temp=temp, commit=False, formats='fetchone')
+        return self.connectExecute(sql=sql, temp=temp, commit=False, fetch='fetchone')
 
     def deletePosts(self, time: str):
         if self.selectPosts(time):
             sql = 'DELETE FROM posts WHERE time=?'
             temp = (time,)
-            self.connectExecute(sql=sql, temp=temp, formats=str())
+            self.connectExecute(sql=sql, temp=temp)
