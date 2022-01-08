@@ -34,8 +34,8 @@ ___
 **All files with bot event handlers are stored in this folder**
 ### `classes`
 - **Modules for the stable operation of the bot are stored in this folder, and you can also add your own modules, which later you will just need to plug and thus add functionality.** 
- - ### `classes_db` 
- - **This folder contains the class files to create the tables and methods of interacting with the database tables**
+- ### `classes_db` 
+  - **This folder contains the class files to create the tables and methods of interacting with the database tables**
 
 ___
 ## The bot already knows how to do:
