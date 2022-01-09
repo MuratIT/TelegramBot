@@ -1,3 +1,4 @@
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from jinja2 import Environment, FileSystemLoader
 from classes.Broadcaster import Broadcaster
 from classes.templates import Templates
@@ -8,6 +9,9 @@ import logging
 import asyncio
 import os
 
+
+ADMIN_CHAT_ID = os.environ.get('ADMIN_CHAT_ID')
+TOKEN = os.environ.get('TOKEN')
 
 strfmt = '[%(asctime)s] | [%(name)s] | [%(levelname)s] | %(message)s'
 
@@ -32,8 +36,8 @@ log.info('Including the Environment in the solution')
 env = Environment(loader=FileSystemLoader('text_templates'), trim_blocks=True)
 
 
-bot = Bot(os.environ.get('TOKEN'))
-dp = Dispatcher(bot)
+bot = Bot(TOKEN)
+dp = Dispatcher(bot, storage=MemoryStorage())
 
 
 log.info('Including the Templates in the solution')

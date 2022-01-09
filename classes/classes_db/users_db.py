@@ -32,6 +32,11 @@ class UsersDB(InitDB):
         temp = (id_user,)
         return self.connectExecute(sql=sql, temp=temp, commit=False, fetch='fetchone')
 
+    def selectUsersCount(self, blocked: str):
+        sql = 'SELECT count() as count FROM users WHERE blocked=?'
+        temp = (blocked,)
+        return self.connectExecute(sql=sql, temp=temp, commit=False, fetch='fetchone')
+
     def selectsUsers(self):
         sql = 'SELECT * FROM users'
         return self.connectExecute(sql=sql, commit=False, fetch='fetchall')
