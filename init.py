@@ -1,12 +1,14 @@
-from jinja2 import Environment, FileSystemLoader
-from classes.Broadcaster import Broadcaster
-from classes.templates import Templates
-from classes.Keyboard import Keyboard
-from aiogram import Bot, Dispatcher
-from classes.db import DB
 import logging
 import asyncio
 import os
+
+from jinja2 import Environment, FileSystemLoader
+from aiogram import Bot, Dispatcher
+
+from classes.classes_db.init_db import InitDB
+from classes.Broadcaster import Broadcaster
+from classes.templates import Templates
+from classes.Keyboard import Keyboard
 
 
 strfmt = '[%(asctime)s] | [%(name)s] | [%(levelname)s] | %(message)s'
@@ -21,7 +23,8 @@ loop = asyncio.get_event_loop()
 
 
 log.info('Including the database in the solution')
-db = DB('baseDate')
+db = InitDB()
+db.createDatabase()
 
 
 log.info('Including the Keyboard in the solution')

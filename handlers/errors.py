@@ -1,32 +1,47 @@
+import logging
+
 from aiogram.utils.exceptions import BotBlocked, ChatNotFound, UserDeactivated, TelegramAPIError
 from aiogram import types, Dispatcher
-from classes.db import DB
-import logging
+
+from classes.classes_db import InitDB
+from classes.classes_db import UsersDB
 
 
 class Errors:
-    def __init__(self, db: DB):
+    def __init__(self, db: InitDB):
         self.log = logging.getLogger('errors')
         self.db = db
 
-    def addUser(self, id_user: str, active: str, passive: str):
-        insert = self.db.insertUsers(id_user, active)
-        if not insert:
-            if self.db.selectUsers(id_user)['blocked'] == passive:
-                self.db.updateUsersBlocked(id_user, active)
+    def addUser(self, id_chat: str, blocked: int):
+        @self.db.sessionDB(UsersDB)
+        def wrapper(object_db, query, session_db):
+            select = query.filter(object_db.id_chat == id_chat).first()
+            if not select:
+                users = object_db(id_chat, blocked)
+                session_db.add(users)
+                session_db.commit()
+            else:
+                query.filter(object_db.id_chat == select.id_chat).update({'blocked': blocked})
+                session_db.commit()
 
     async def error_BotBlocked(self, update: types.Update, exception: BotBlocked):
-        self.addUser(f'{update.message.chat.id}', '1', '0')
+        self.addUser(f'{update.message.chat.id}', 1)
         self.log.info(f"{exception}")
         return True
 
     async def error_ChatNotFound(self, update: types.Update, exception: ChatNotFound):
-        self.db.deleteUser(f"{update.message.chat.id}")
+        @self.db.sessionDB(UsersDB)
+        def deleteUser(object_db, query, session_db):
+            query.filter(object_db.id_chat == update.message.chat.id).delete()
+
         self.log.info(f"{exception}")
         return True
 
     async def error_UserDeactivated(self, update: types.Update, exception: UserDeactivated):
-        self.db.deleteUser(f"{update.message.chat.id}")
+        @self.db.sessionDB(UsersDB)
+        def deleteUser(object_db, query, session_db):
+            query.filter(object_db.id_chat == update.message.chat.id).delete()
+
         self.log.info(f"{exception}")
         return True
 

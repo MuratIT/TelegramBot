@@ -1,15 +1,17 @@
+import logging
+
 from aiogram.dispatcher.filters import Text
-from classes.templates import Templates
 from aiogram import types, Dispatcher
+from jinja2 import Environment
+
+from classes.classes_db import InitDB
+from classes.templates import Templates
 from classes.Keyboard import Keyboard
 from handlers.errors import Errors
-from jinja2 import Environment
-from classes.db import DB
-import logging
 
 
 class Client:
-    def __init__(self, db: DB, env: Environment, keyboards: Keyboard, temp: Templates, error: Errors):
+    def __init__(self, db: InitDB, env: Environment, keyboards: Keyboard, temp: Templates, error: Errors):
         self.log = logging.getLogger('client')
 
         self.db = db
@@ -22,7 +24,7 @@ class Client:
 
     async def cmdStart(self, message: types.Message):
         if message.chat.type == 'private':
-            self.__addUser(f'{message.chat.id}', '0', '1')
+            self.__addUser(f'{message.chat.id}', 0)
 
             objects = await self.temp.temUser(message.chat.id)
             start_text = self.temp.templates_text(file='start.txt', objects=objects)

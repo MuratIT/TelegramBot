@@ -1,40 +1,28 @@
-import sqlite3
-import logging
+import os
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 
 
 class InitDB:
-    def __init__(self, name: str):
-        self.log_init_db = logging.getLogger('init_db')
-        self.__name = name
+    Base = declarative_base()
 
-    @staticmethod
-    def dict_factory(cursor, row):
-        d = {}
-        for idx, col in enumerate(cursor.description):
-            d[col[0]] = row[idx]
-        return d
+    def __init__(self, name: str = 'dataBase'):
+        self.name = f'{name}.sqlite'
 
-    @staticmethod
-    def __fetchReturn(aw: any, formats: str):
-        if formats == 'fetchone':
-            return aw.fetchone()
-        elif formats == 'fetchall':
-            aw_arr = list()
-            for item in aw.fetchall():
-                aw_arr.append(item)
-            return aw_arr
-        return None
+        self.__engine = create_engine(f'sqlite:///{self.name}')
+        self.__session = sessionmaker(bind=self.__engine)
 
-    def connectExecute(self, sql: str, temp: tuple = tuple(), commit: bool = True, fetch: str = None):
-        with sqlite3.connect(f'{self.__name}.db') as connect:
-            try:
-                connect.row_factory = self.dict_factory
+    def createDatabase(self):
+        if not os.path.exists(self.name):
+            self.Base.metadata.create_all(self.__engine)
 
-                cursor = connect.cursor()
-                aw = cursor.execute(sql, temp)
-                if commit:
-                    connect.commit()
-
-                return self.__fetchReturn(aw, fetch)
-            except sqlite3.DatabaseError as err:
-                self.log_init_db.error(err)
+    def sessionDB(self, object_db: object):
+        def wrapper(func):
+            session_db = self.__session()
+            query = session_db.query(object_db)
+            func_query = func(object_db, query, session_db)
+            session_db.close()
+            return func_query
+        return wrapper
