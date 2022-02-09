@@ -158,12 +158,12 @@ class Broadcaster:
         except ChatNotFound:
             @self.db.sessionDB(UsersDB)
             def deleteUser(object_db, query, session_db):
-                query.filter_by(object_db.id_chat == id_chat).delete()
+                query.filter(object_db.id_chat == id_chat).delete()
 
         except UserDeactivated:
             @self.db.sessionDB(UsersDB)
             def deleteUser(object_db, query, session_db):
-                query.filter_by(object_db.id_chat == id_chat).delete()
+                query.filter(object_db.id_chat == id_chat).delete()
 
         except TelegramAPIError as TAPI:
             self.log.error(TAPI)
