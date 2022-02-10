@@ -3,6 +3,7 @@ import os
 from aiogram import Dispatcher, types, Bot
 from aiogram.dispatcher.filters import Text
 from aiogram.types import InputFile
+from aiogram.dispatcher import FSMContext
 
 from classes.gettext import getText
 from classes.classes_db import InitDB
@@ -65,7 +66,8 @@ class Admin:
 
             elif callback_query.data == self.names_admin_menu[1]:
                 await AdminCreatePost.post.set()
-                await callback_query.message.edit_text(getText('send_post'))
+                await callback_query.message.edit_text(getText('send_post'),
+                                                       reply_markup=self.keyboards.inlineAddCallback(['Отмена']))
 
             elif callback_query.data == self.names_admin_menu[2]:
                 file = InputFile('logging.log')
@@ -87,9 +89,20 @@ class Admin:
 
         await callback_query.answer()
 
+    async def exitAdminCreatePost(self, callback_query: types.CallbackQuery, state: FSMContext):
+        if callback_query.message.chat.type == 'private' \
+                and callback_query.message.chat.username == self.admin_username:
+
+            await callback_query.message.edit_text(getText('post_successfully_exit'))
+            await state.finish()
+
+        await callback_query.answer()
+
     def registerHandlers(self, dp: Dispatcher):
         dp.register_message_handler(self.cmdAdmin, commands=['admin'])
 
         dp.register_callback_query_handler(self.cmdAdminMenu, Text(equals=self.names_admin_menu, ignore_case=True))
 
         dp.register_callback_query_handler(self.exitAdmin, Text(equals=self.nameExit_admin_menu, ignore_case=True))
+
+        dp.register_callback_query_handler(self.exitAdminCreatePost, Text(equals='Отмена', ignore_case=True), state="*")

@@ -71,7 +71,8 @@ class CreateButtons:
                 self.buttons_names, self.buttons_url = list(), list()
 
                 await AdminCreatePost.time.set()
-                await CallbackQuery.message.edit_text(getText('time'))
+                await CallbackQuery.message.edit_text(getText('time'),
+                                                      reply_markup=self.keyboard.inlineAddCallback(['Отмена']))
 
         await CallbackQuery.answer()
 

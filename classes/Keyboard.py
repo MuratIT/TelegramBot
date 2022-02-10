@@ -67,6 +67,10 @@ class Keyboard:
                 inline_kb.row(*list_inline_keyboard_button)
         return inline_kb
 
+    def inlineAddCallback(self, names: list = None, count: int = 1):
+        buttons_object = self.InlineMenu(names)
+        return self.inline(buttons_object, count)
+
     def reply(self, lists: list, count: int = 0):
         lists = self.__edit_item_list(lists, count)
 

@@ -25,7 +25,7 @@ class CreatePost:
 
         self.keyboard_button_names = ['Да', 'Нет']
         self.keyboard_button_object = self.keyboard.InlineMenu(self.keyboard_button_names)
-        self.keyboard_button = self.keyboard.inline(self.keyboard_button_object)
+        self.keyboard_button = self.keyboard.inline(self.keyboard_button_object, 2)
 
     @staticmethod
     async def __chekText(message: types.Message):
@@ -110,7 +110,8 @@ class CreatePost:
                     data['buttons'] = 'false'
 
                 await AdminCreatePost.time.set()
-                await CallbackQuery.message.edit_text(getText('time'))
+                await CallbackQuery.message.edit_text(getText('time'),
+                                                      reply_markup=self.keyboard.inlineAddCallback(['Отмена']))
 
         await CallbackQuery.answer()
 
