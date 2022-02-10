@@ -1,4 +1,5 @@
 import os
+from contextlib import contextmanager
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -18,11 +19,14 @@ class InitDB:
         if not os.path.exists(self.name):
             self.Base.metadata.create_all(self.__engine)
 
-    def sessionDB(self, object_db: object):
-        def wrapper(func):
-            session_db = self.__session()
-            query = session_db.query(object_db)
-            func_query = func(object_db, query, session_db)
-            session_db.close()
-            return func_query
-        return wrapper
+    @contextmanager
+    def session_scope(self):
+        session = self.__session()
+        try:
+            yield session
+            session.commit()
+        except ValueError:
+            session.rollback()
+            raise
+        finally:
+            session.close()

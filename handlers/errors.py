@@ -12,17 +12,19 @@ class Errors:
         self.log = logging.getLogger('errors')
         self.db = db
 
+    def _deleteUser(self, id_chat: str):
+        with self.db.session_scope() as session:
+            session.query(UsersDB).filter(UsersDB.id_chat == id_chat).delete()
+
     def addUser(self, id_chat: str, blocked: int):
-        @self.db.sessionDB(UsersDB)
-        def wrapper(object_db, query, session_db):
-            select = query.filter(object_db.id_chat == id_chat).first()
+        with self.db.session_scope() as session:
+            select = session.query(UsersDB).filter(UsersDB.id_chat == id_chat).first()
             if not select:
-                users = object_db(id_chat, blocked)
-                session_db.add(users)
-                session_db.commit()
+                user = UsersDB(id_chat, blocked)
+                session.add(user)
             else:
-                query.filter(object_db.id_chat == select.id_chat).update({'blocked': blocked})
-                session_db.commit()
+                session.query(UsersDB).filter(UsersDB.id_chat == select.id_chat).update({'blocked': blocked})
+            session.commit()
 
     async def error_BotBlocked(self, update: types.Update, exception: BotBlocked):
         self.addUser(f'{update.message.chat.id}', 1)
@@ -30,17 +32,13 @@ class Errors:
         return True
 
     async def error_ChatNotFound(self, update: types.Update, exception: ChatNotFound):
-        @self.db.sessionDB(UsersDB)
-        def deleteUser(object_db, query, session_db):
-            query.filter(object_db.id_chat == update.message.chat.id).delete()
+        self._deleteUser(update.message.chat.id)
 
         self.log.info(f"{exception}")
         return True
 
     async def error_UserDeactivated(self, update: types.Update, exception: UserDeactivated):
-        @self.db.sessionDB(UsersDB)
-        def deleteUser(object_db, query, session_db):
-            query.filter(object_db.id_chat == update.message.chat.id).delete()
+        self._deleteUser(update.message.chat.id)
 
         self.log.info(f"{exception}")
         return True

@@ -2,6 +2,7 @@ from asyncio import get_event_loop, set_event_loop
 from datetime import datetime
 import logging
 import asyncio
+import random
 import json
 
 from aiogram.types import InputFile, InputMediaPhoto, InputMediaVideo, InputMediaAudio, InputMediaDocument
@@ -16,7 +17,9 @@ from classes.classes_db import PostDB
 
 
 class Broadcaster:
-    def __init__(self, bot: Bot, db: InitDB, loop: get_event_loop or set_event_loop, Keyboards: Keyboard, temp: Templates):
+    def __init__(self, bot: Bot, db: InitDB,
+                 loop: get_event_loop or set_event_loop,
+                 Keyboards: Keyboard, temp: Templates):
 
         self.log = logging.getLogger('Broadcaster')
 
@@ -49,16 +52,18 @@ class Broadcaster:
                                                    caption=caption if len(id_media) == 0 else None))
 
     def __updateUser(self, id_chat: str, blocked: int):
-        @self.db.sessionDB(UsersDB)
-        def wrapper(object_db, query, session_db):
-            select = query.filter(object_db.id_chat == id_chat).first()
+        with self.db.session_scope() as session:
+            select = session.query(UsersDB).filter(UsersDB.id_chat == id_chat).first()
             if not select:
-                users = object_db(id_chat, blocked)
-                session_db.add(users)
-                session_db.commit()
+                user = UsersDB(id_chat, blocked)
+                session.add(user)
             else:
-                query.filter(object_db.id_chat == select.id_chat).update({'blocked': blocked})
-                session_db.commit()
+                session.query(UsersDB).filter(UsersDB.id_chat == select.id_chat).update({'blocked': blocked})
+            session.commit()
+
+    def _deleteUser(self, id_chat: str):
+        with self.db.session_scope() as session:
+            session.query(UsersDB).filter(UsersDB.id_chat == id_chat).delete()
 
     def group_input_file(self, media_files: list, caption: str):
         id_media = list()
@@ -134,7 +139,7 @@ class Broadcaster:
             return list()
 
     def reply_markup(self, reply_markup: str):
-        if reply_markup != 'false':
+        if reply_markup != '0':
             reply_markup = self.Keyboards.inline(self.chJson(reply_markup))
             return reply_markup
 
@@ -156,49 +161,39 @@ class Broadcaster:
         except BotBlocked:
             self.__updateUser(id_chat, 1)
         except ChatNotFound:
-            @self.db.sessionDB(UsersDB)
-            def deleteUser(object_db, query, session_db):
-                query.filter(object_db.id_chat == id_chat).delete()
+            self._deleteUser(id_chat)
 
         except UserDeactivated:
-            @self.db.sessionDB(UsersDB)
-            def deleteUser(object_db, query, session_db):
-                query.filter(object_db.id_chat == id_chat).delete()
+            self._deleteUser(id_chat)
 
         except TelegramAPIError as TAPI:
             self.log.error(TAPI)
 
     async def __sendUsersAll(self, text: str, media: str, reply_markup: str):
         media, id_media = self.input_file(media, text)
-        select_users = list()
 
-        @self.db.sessionDB(UsersDB)
-        def users(object_db, query, session_db):
-            select_users.append(query.all())
+        with self.db.session_scope() as session:
+            select = session.query(UsersDB).all()
 
-        for item in select_users[0]:
-            if item.blocked != 1:
-                text = self.temp.templates_text_only(text, await self.temp.temUser(item.id_chat))
-                await self.__send(item.id_chat, text, media, id_media, self.reply_markup(reply_markup))
+            for item in select:
+                if item.blocked != 1:
+                    text = self.temp.templates_text_only(text, await self.temp.temUser(item.id_chat))
+                    await self.__send(item.id_chat, text, media, id_media, self.reply_markup(reply_markup))
 
     async def __broadcaster(self):
         while True:
             await asyncio.sleep(0.1)
             time = datetime.today().strftime('%d.%m.%Y %H:%M:%S')
-            select_post = list()
 
-            @self.db.sessionDB(PostDB)
-            def post(object_db, query, session_db):
-                select_post.append(query.filter(object_db.time == time).first())
+            with self.db.session_scope() as session:
+                select = session.query(PostDB).filter(PostDB.time == time).first()
 
-            if select_post[0]:
-                if select_post[0].checked == 0:
-                    await self.__sendUsersAll(select_post[0].text, select_post[0].media, select_post[0].reply_markup)
-
-                    @self.db.sessionDB(PostDB)
-                    def post(object_db, query, session_db):
-                        query.filter(object_db.time == select_post[0].time).update({'checked': 1})
-                        session_db.commit()
+                if select:
+                    if select.checked == 0:
+                        await self.__sendUsersAll(select.text, select.media, select.reply_markup)
+                        session.query(PostDB).filter(PostDB.time == select.time).update(
+                            {'checked': 1, 'time': f'none:{random.randint(2344, 234432)}'})
+                        session.commit()
 
     async def run(self):
         self.loop.create_task(self.__broadcaster())

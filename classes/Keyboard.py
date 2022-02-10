@@ -7,6 +7,13 @@ class Keyboard:
         self.remove = ReplyKeyboardRemove()
 
     @staticmethod
+    def __edit_item_list(lists: list, counts: int):
+        buttons = list()
+        for i in range(0, len(lists), counts):
+            buttons.append(lists[i:i + counts])
+        return buttons
+
+    @staticmethod
     def __listInlineKeyboardButton(lists: list):
         buttons = list()
 
@@ -29,7 +36,22 @@ class Keyboard:
                 arr.append(KeyboardButton(item))
         return arr
 
-    def inline(self, lists: list):
+    @staticmethod
+    def InlineMenu(names: list = None, urls: list = None):
+        objects = list()
+        if names and not urls:
+            for name in names:
+                objects.append({'title': name, 'callback_data': name, 'url': None})
+
+        if urls:
+            for key, name in enumerate(names):
+                objects.append({'title': name, 'callback_data': None, 'url': urls[key]})
+
+        return objects
+
+    def inline(self, lists: list, count: int = 1):
+        lists = self.__edit_item_list(lists, count)
+
         inline_kb = InlineKeyboardMarkup()
         for item in lists:
             if type(item) == dict:
@@ -45,7 +67,9 @@ class Keyboard:
                 inline_kb.row(*list_inline_keyboard_button)
         return inline_kb
 
-    def reply(self, lists: list):
+    def reply(self, lists: list, count: int = 0):
+        lists = self.__edit_item_list(lists, count)
+
         reply_keyboard_markup = ReplyKeyboardMarkup(resize_keyboard=True)
         for item in lists:
             if type(item) == str:
