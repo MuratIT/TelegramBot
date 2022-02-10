@@ -4,6 +4,7 @@ from aiogram import Dispatcher, types, Bot
 from aiogram.dispatcher.filters import Text
 from aiogram.types import InputFile
 
+from classes.gettext import getText
 from classes.classes_db import InitDB
 from classes.classes_db import UsersDB
 from classes.classes_db import PostDB
@@ -64,7 +65,7 @@ class Admin:
 
             elif callback_query.data == self.names_admin_menu[1]:
                 await AdminCreatePost.post.set()
-                await callback_query.message.edit_text('Отправте пост')
+                await callback_query.message.edit_text(getText('send_post'))
 
             elif callback_query.data == self.names_admin_menu[2]:
                 file = InputFile('logging.log')

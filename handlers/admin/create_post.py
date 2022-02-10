@@ -6,6 +6,7 @@ from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 
+from classes.gettext import getText
 from classes.classes_db import InitDB
 from classes.classes_db import PostDB
 from classes.Keyboard import Keyboard
@@ -20,7 +21,7 @@ class CreatePost:
         self.temp = temp
         self.admin_username = os.environ.get('ADMIN_USERNAME')
 
-        self.stat_text_button = 'Создать кнопку?'
+        self.stat_text_button = getText('create_button')
 
         self.keyboard_button_names = ['Да', 'Нет']
         self.keyboard_button_object = self.keyboard.InlineMenu(self.keyboard_button_names)
@@ -30,7 +31,7 @@ class CreatePost:
     async def __chekText(message: types.Message):
         if not message.caption:
             await message.delete()
-            await message.answer('Пожалуйста укажите текст к файлу или медиа')
+            await message.answer(getText('send_post_error_validators'))
             return False
         return True
 
@@ -41,7 +42,7 @@ class CreatePost:
             return True
         except ValueError:
             await message.delete()
-            await message.answer(f"данные о времени '{message.text}' не соответствуют формату '%d.%m.%Y %H:%M:%S'")
+            await message.answer(getText('time_error_validators'))
             return False
 
     @staticmethod
@@ -102,14 +103,14 @@ class CreatePost:
             if CallbackQuery.data == self.keyboard_button_names[0]:
 
                 await AdminCreatePost.next()
-                await CallbackQuery.message.edit_text('Укажите названия кнопки')
+                await CallbackQuery.message.edit_text(getText('title_button'))
 
             elif CallbackQuery.data == self.keyboard_button_names[1]:
                 async with state.proxy() as data:
                     data['buttons'] = 'false'
 
                 await AdminCreatePost.time.set()
-                await CallbackQuery.message.edit_text('Укажите время публикации!')
+                await CallbackQuery.message.edit_text(getText('time'))
 
         await CallbackQuery.answer()
 
@@ -138,10 +139,10 @@ class CreatePost:
                             session.commit()
 
                     if time:
-                        await message.answer('Такое время публикации уже есть, пожалуста укажите другое время!')
+                        await message.answer(getText('time_error_repeated'))
                     else:
                         await state.finish()
-                        await message.answer('Пост усешно опубликован!')
+                        await message.answer(getText('post_successfully'))
 
     def registerHandlers(self, dp: Dispatcher):
 

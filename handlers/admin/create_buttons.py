@@ -5,6 +5,7 @@ from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 
+from classes.gettext import getText
 from classes.classes_db import InitDB
 from classes.Keyboard import Keyboard
 from classes.templates import Templates
@@ -33,10 +34,10 @@ class CreateButtons:
                 self.buttons_names.append(message.text)
 
                 await AdminCreatePost.url.set()
-                await message.answer('Унажите url или названия собития')
+                await message.answer(getText('url_callback_button'))
             else:
                 await message.delete()
-                await message.answer('Такое названия уже используется! Придумате что-то другое!')
+                await message.answer(getText('title_button_error'))
 
     async def CreateButtonURL(self, message: types.Message, state: FSMContext):
         if message.chat.type == 'private' \
@@ -47,13 +48,13 @@ class CreateButtons:
                     self.buttons_url.append(message.text)
 
                     await AdminCreatePost.continues.set()
-                    await message.answer('Создать ещё кнопку?', reply_markup=self.button_menu)
+                    await message.answer(getText('create_button_next'), reply_markup=self.button_menu)
                 else:
                     await message.delete()
-                    await message.answer('Ссылка не коректна! Укажите другую ссылку!')
+                    await message.answer(getText('url_callback_button_error_validators'))
             else:
                 await message.delete()
-                await message.answer('Такая ссылка уже используется! Укажите другую ссылку!')
+                await message.answer(getText('url_callback_button_error_repeated'))
 
     async def CreateButtonsContinues(self, CallbackQuery: types.CallbackQuery, state: FSMContext):
         if CallbackQuery.message.chat.type == 'private' \
@@ -61,7 +62,7 @@ class CreateButtons:
 
             if CallbackQuery.data == self.button_menu_names[0]:
                 await AdminCreatePost.title.set()
-                await CallbackQuery.message.edit_text('Укажите названия кнопки')
+                await CallbackQuery.message.edit_text(getText('title_button'))
 
             elif CallbackQuery.data == self.button_menu_names[1]:
                 async with state.proxy() as data:
@@ -70,7 +71,7 @@ class CreateButtons:
                 self.buttons_names, self.buttons_url = list(), list()
 
                 await AdminCreatePost.time.set()
-                await CallbackQuery.message.edit_text('Укажите время публикации!')
+                await CallbackQuery.message.edit_text(getText('time'))
 
         await CallbackQuery.answer()
 
