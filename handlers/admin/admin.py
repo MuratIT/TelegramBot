@@ -6,6 +6,7 @@ from aiogram.types import InputFile
 
 from classes.classes_db import InitDB
 from classes.classes_db import UsersDB
+from classes.classes_db import PostDB
 from classes.Keyboard import Keyboard
 from classes.templates import Templates
 from classes.states_group import AdminCreatePost
@@ -34,6 +35,10 @@ class Admin:
             objects['all_users'] = session.query(UsersDB).count()
             objects['active_users'] = session.query(UsersDB).filter(UsersDB.blocked == 0).count()
             objects['passive_users'] = session.query(UsersDB).filter(UsersDB.blocked == 1).count()
+
+            objects['all_posts'] = session.query(PostDB).count()
+            objects['active_posts'] = session.query(PostDB).filter(PostDB.checked == 0).count()
+            objects['passive_posts'] = session.query(PostDB).filter(PostDB.checked == 1).count()
 
         return objects
 

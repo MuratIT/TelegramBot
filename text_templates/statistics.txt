@@ -1,0 +1,7 @@
+all users: {{ all_users }}
+active users: {{ active_users }}
+passive users: {{ passive_users }}
+
+all posts: {{ all_posts }}
+all posts: {{ active_posts }}
+all posts: {{ passive_posts }}
