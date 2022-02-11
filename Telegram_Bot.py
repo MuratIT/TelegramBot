@@ -12,11 +12,15 @@ from classes.templates import Templates
 from classes.Broadcaster import Broadcaster
 from handlers.errors import Errors
 from handlers.client import Client
+from handlers.admin.create_buttons import CreateButtons
+from handlers.admin.create_post import CreatePost
+from handlers.admin.admin import Admin
+
 
 strfmt = '[%(asctime)s] | [%(name)s] | [%(levelname)s] | %(message)s'
 datefmt = '%Y-%m-%d %H:%M:%S'
 
-logging.basicConfig(level=logging.INFO, format=strfmt, datefmt=datefmt)
+logging.basicConfig(level=logging.INFO, format=strfmt, datefmt=datefmt, filename='logging.log')
 
 
 class TelegramBot:
@@ -39,10 +43,18 @@ class TelegramBot:
         error = Errors(self.db)
         client = Client(self.db, self.keyboard, self.temp, error)
 
+        create_buttons = CreateButtons(self.db, self.keyboard, self.temp)
+        create_post = CreatePost(self.db, self.keyboard, self.temp)
+        admin = Admin(self.db, self.bot, self.keyboard, self.temp)
+
         await Broadcaster(self.bot, self.db, self.loop, self.keyboard, self.temp).run()
 
         error.registerHandlers(dp)
         client.registerHandlers(dp)
+
+        create_buttons.registerHandlers(dp)
+        create_post.registerHandlers(dp)
+        admin.registerHandlers(dp)
 
     def run(self):
         executor.start_polling(self.dp, loop=self.loop, skip_updates=True, on_startup=self.on_startup)
