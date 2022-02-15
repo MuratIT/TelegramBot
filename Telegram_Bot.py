@@ -6,6 +6,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram import Bot, Dispatcher, executor
 from jinja2 import Environment, FileSystemLoader
 
+from classes.load import loadClasses
 from classes.classes_db import InitDB
 from classes.Keyboard import Keyboard
 from classes.templates import Templates
@@ -48,6 +49,17 @@ class TelegramBot:
         admin = Admin(self.db, self.bot, self.keyboard, self.temp)
 
         await Broadcaster(self.bot, self.db, self.loop, self.keyboard, self.temp).run()
+
+        for class_ in loadClasses('modules'):
+            classes = class_(self.bot, self.db, self.loop, self.keyboard, self.temp)
+
+            if 'run' in dir(classes):
+                classes.run()
+            elif 'runAsync' in dir(classes):
+                await classes.runAsync()
+
+            if 'registerHandlers' in dir(classes):
+                classes.registerHandlers(dp)
 
         error.registerHandlers(dp)
         client.registerHandlers(dp)
