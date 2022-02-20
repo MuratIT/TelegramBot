@@ -1,160 +1,150 @@
-import os
 import json
-import datetime
 
-from aiogram import Dispatcher, types
+from asyncio import get_event_loop, set_event_loop
+
+from aiogram import Dispatcher, Bot, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 
-from classes.gettext import getText
 from classes.classes_db import InitDB
 from classes.classes_db import PostDB
-from classes.Keyboard import Keyboard
 from classes.templates import Templates
+from classes.Keyboard import Keyboard
+from classes.functions import Functions
+from classes.gettext import getText
 from classes.states_group import AdminCreatePost
 
 
-class CreatePost:
-    def __init__(self, db: InitDB, keyboard: Keyboard, temp: Templates):
+class CreatePost(Functions):
+    def __init__(self, bot: Bot, db: InitDB,
+                 loop: get_event_loop or set_event_loop,
+                 Keyboards: Keyboard, temp: Templates):
+        super(CreatePost, self).__init__(bot, db, loop, Keyboards, temp)
+
         self.db = db
-        self.keyboard = keyboard
+        self.keyboard = Keyboards
         self.temp = temp
-        self.admin_username = os.environ.get('ADMIN_USERNAME')
-
-        self.stat_text_button = getText('create_button')
-
-        self.keyboard_button_names = ['Да', 'Нет']
-        self.keyboard_button_object = self.keyboard.InlineMenu(self.keyboard_button_names)
-        self.keyboard_button = self.keyboard.inline(self.keyboard_button_object, 2)
 
     @staticmethod
-    async def __chekText(message: types.Message):
-        if not message.caption:
+    async def __StatePostObject(state: FSMContext, text: str, photo: str = "false", video: str = "false",
+                                audio: str = "false", document: str = "false"):
+        if text:
+            async with state.proxy() as data:
+                data['text'] = text
+                data['photo'] = photo
+                data['video'] = video
+                data['audio'] = audio
+                data['document'] = document
+            return True
+        return False
+
+    async def __createPost(self, message: types.Message):
+        await AdminCreatePost.next()
+        keyboard = self.keyboard.loadKeyboard('create_buttons_admin')[0]
+        await message.answer(getText('create_button'), reply_markup=self.keyboard.inline(keyboard))
+
+    async def createPost(self, message: types.Message, state: FSMContext):
+        text = await self.__StatePostObject(state, message.text)
+        if text:
+            await self.__createPost(message)
+        else:
             await message.delete()
             await message.answer(getText('send_post_error_validators'))
-            return False
-        return True
 
-    @staticmethod
-    async def __chekTime(message: types.Message):
-        try:
-            datetime.datetime.strptime(message.text, '%d.%m.%Y %H:%M:%S')
-            return True
-        except ValueError:
+    async def createPostPhoto(self, message: types.Message, state: FSMContext):
+        text = await self.__StatePostObject(state, message.caption, photo=message.photo[0].file_id)
+        if text:
+            await self.__createPost(message)
+        else:
             await message.delete()
-            await message.answer(getText('time_error_validators'))
-            return False
+            await message.answer(getText('send_post_error_validators'))
 
-    @staticmethod
-    async def __StatePostObject(text: str, photo: str, video: str, audio: str, document: str, state: FSMContext):
-        async with state.proxy() as data:
-            data['text'] = text
-            data['photo'] = photo
-            data['video'] = video
-            data['audio'] = audio
-            data['document'] = document
+    async def createPostVideo(self, message: types.Message, state: FSMContext):
+        text = await self.__StatePostObject(state, message.caption, video=message.video.file_id)
+        if text:
+            await self.__createPost(message)
+        else:
+            await message.delete()
+            await message.answer(getText('send_post_error_validators'))
 
-    async def CreatePost(self, message: types.Message, state: FSMContext):
-        if message.chat.type == 'private' \
-                and message.chat.username == self.admin_username:
-            await self.__StatePostObject(message.text, 'false', 'false', 'false', 'false', state)
+    async def createPostAudio(self, message: types.Message, state: FSMContext):
+        text = await self.__StatePostObject(state, message.caption, audio=message.audio.file_id)
+        if text:
+            await self.__createPost(message)
+        else:
+            await message.delete()
+            await message.answer(getText('send_post_error_validators'))
+
+    async def createPostDocument(self, message: types.Message, state: FSMContext):
+        text = await self.__StatePostObject(state, message.caption, document=message.document.file_id)
+        if text:
+            await self.__createPost(message)
+        else:
+            await message.delete()
+            await message.answer(getText('send_post_error_validators'))
+
+    async def createButtons(self, message: types.CallbackQuery, state: FSMContext):
+        if message.data == 'createButtonYes':
             await AdminCreatePost.next()
-            await message.answer(self.stat_text_button, reply_markup=self.keyboard_button)
+            await message.message.edit_text(getText('title_button'))
 
-    async def CreatePostPhoto(self, message: types.Message, state: FSMContext):
-        if message.chat.type == 'private' \
-                and message.chat.username == self.admin_username:
-            if await self.__chekText(message):
-                await self.__StatePostObject(message.caption, message.photo[0].file_id,
-                                             'false', 'false', 'false', state)
-                await AdminCreatePost.next()
-                await message.answer(self.stat_text_button, reply_markup=self.keyboard_button)
+        elif message.data == 'createButtonNo':
+            async with state.proxy() as data:
+                data['buttons'] = "false"
 
-    async def CreatePostVideo(self, message: types.Message, state: FSMContext):
-        if message.chat.type == 'private' \
-                and message.chat.username == self.admin_username:
+            await AdminCreatePost.time.set()
+            admin_exit = self.keyboard.loadKeyboard('cancellation')[0]
+            await message.message.edit_text(getText('time'), reply_markup=self.keyboard.inline(admin_exit))
 
-            if await self.__chekText(message):
-                await self.__StatePostObject(message.caption, 'false', message.video.file_id, 'false', 'false', state)
-                await AdminCreatePost.next()
-                await message.answer(self.stat_text_button, reply_markup=self.keyboard_button)
+        await message.answer()
 
-    async def CreatePostAudio(self, message: types.Message, state: FSMContext):
-        if message.chat.type == 'private' \
-                and message.chat.username == self.admin_username:
-            if await self.__chekText(message):
-                await self.__StatePostObject(message.caption, 'false', 'false', message.audio.file_id, 'false', state)
-                await AdminCreatePost.next()
-                await message.answer(self.stat_text_button, reply_markup=self.keyboard_button)
-
-    async def CreatePostDocument(self, message: types.Message, state: FSMContext):
-        if message.chat.type == 'private' \
-                and message.chat.username == self.admin_username:
-            if await self.__chekText(message):
-                await self.__StatePostObject(message.caption,
-                                             'false', 'false', 'false', message.document.file_id, state)
-                await AdminCreatePost.next()
-                await message.answer(self.stat_text_button, reply_markup=self.keyboard_button)
-
-    async def CreateButton(self, CallbackQuery: types.CallbackQuery, state: FSMContext):
-        if CallbackQuery.message.chat.type == 'private' \
-                and CallbackQuery.message.chat.username == self.admin_username:
-
-            if CallbackQuery.data == self.keyboard_button_names[0]:
-
-                await AdminCreatePost.next()
-                await CallbackQuery.message.edit_text(getText('title_button'))
-
-            elif CallbackQuery.data == self.keyboard_button_names[1]:
-                async with state.proxy() as data:
-                    data['buttons'] = 'false'
-
-                await AdminCreatePost.time.set()
-                await CallbackQuery.message.edit_text(getText('time'),
-                                                      reply_markup=self.keyboard.inlineAddCallback(['Отмена']))
-
-        await CallbackQuery.answer()
-
-    async def CreatePostTime(self, message: types.Message, state: FSMContext):
-        if message.chat.type == 'private' \
-                and message.chat.username == self.admin_username:
-            if await self.__chekTime(message):
+    async def createPostTime(self, message: types.Message, state: FSMContext):
+        with self.db.session_scope() as session:
+            select = session.query(PostDB).filter(PostDB.time == message.text).first()
+            if not select:
                 async with state.proxy() as data:
                     temp_media = str()
                     for key, value in data.items():
                         if value != 'false' and key != 'text' and key != 'buttons':
                             temp_media += f'{key}:{value}'
 
-                    buttons = False
-                    if data['buttons'] != 'false':
-                        buttons = json.dumps(data['buttons'])
-
                     if len(temp_media) == 0:
                         temp_media = 'false:none'
 
-                    with self.db.session_scope() as session:
-                        time = session.query(PostDB).filter(PostDB.time == message.text).first()
-                        if not time:
-                            post = PostDB(data['text'], temp_media, buttons, 0, message.text)
-                            session.add(post)
-                            session.commit()
+                    buttons = False
+                    if data['buttons'] != 'false':
+                        buttons = json.dumps(data['buttons'], ensure_ascii=False)
 
-                    if time:
-                        await message.answer(getText('time_error_repeated'))
-                    else:
-                        await state.finish()
-                        await message.answer(getText('post_successfully'))
+                    post = PostDB(data['text'], temp_media, buttons, 0, message.text)
+
+                    session.add(post)
+                    session.commit()
+
+                await state.finish()
+                await message.answer(getText('post_successfully'))
+            else:
+                await message.answer(getText('time_error_repeated'))
 
     def registerHandlers(self, dp: Dispatcher):
+        dp.register_message_handler(self.createPost, content_types='text',
+                                    state=AdminCreatePost.post, is_admin=True, chat_private=True)
 
-        dp.register_message_handler(self.CreatePost, content_types="text", state=AdminCreatePost.post)
-        dp.register_message_handler(self.CreatePostPhoto, content_types="photo", state=AdminCreatePost.post)
-        dp.register_message_handler(self.CreatePostVideo, content_types="video", state=AdminCreatePost.post)
-        dp.register_message_handler(self.CreatePostAudio, content_types="audio", state=AdminCreatePost.post)
-        dp.register_message_handler(self.CreatePostDocument, content_types="document", state=AdminCreatePost.post)
+        dp.register_message_handler(self.createPostPhoto, content_types='photo',
+                                    state=AdminCreatePost.post, is_admin=True, chat_private=True)
 
-        dp.register_callback_query_handler(self.CreateButton,
-                                           Text(equals=self.keyboard_button_names, ignore_case=True),
-                                           state=AdminCreatePost.button)
+        dp.register_message_handler(self.createPostVideo, content_types='video',
+                                    state=AdminCreatePost.post, is_admin=True, chat_private=True)
 
-        dp.register_message_handler(self.CreatePostTime, content_types="text", state=AdminCreatePost.time)
+        dp.register_message_handler(self.createPostAudio, content_types='audio',
+                                    state=AdminCreatePost.post, is_admin=True, chat_private=True)
+
+        dp.register_message_handler(self.createPostDocument, content_types='document',
+                                    state=AdminCreatePost.post, is_admin=True, chat_private=True)
+
+        dp.register_callback_query_handler(self.createButtons,
+                                           Text(equals=self.keyboard.loadKeyboard('create_buttons_admin')[1],
+                                                ignore_case=True),
+                                           state=AdminCreatePost.button, is_admin=True, chat_private=True)
+
+        dp.register_message_handler(self.createPostTime, content_types='text', state=AdminCreatePost.time,
+                                    is_admin=True, chat_private=True, is_time=True)

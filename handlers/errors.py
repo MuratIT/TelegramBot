@@ -1,30 +1,23 @@
 import logging
+from asyncio import get_event_loop, set_event_loop
 
 from aiogram.utils.exceptions import BotBlocked, ChatNotFound, UserDeactivated, TelegramAPIError
-from aiogram import types, Dispatcher
+from aiogram import types, Dispatcher, Bot
 
 from classes.classes_db import InitDB
-from classes.classes_db import UsersDB
+from classes.functions import Functions
+from classes.Keyboard import Keyboard
+from classes.templates import Templates
 
 
-class Errors:
-    def __init__(self, db: InitDB):
+class Errors(Functions):
+    def __init__(self, bot: Bot, db: InitDB,
+                 loop: get_event_loop or set_event_loop,
+                 Keyboards: Keyboard, temp: Templates):
+
+        super(Errors, self).__init__(bot, db, loop, Keyboards, temp)
+
         self.log = logging.getLogger('errors')
-        self.db = db
-
-    def _deleteUser(self, id_chat: str):
-        with self.db.session_scope() as session:
-            session.query(UsersDB).filter(UsersDB.id_chat == id_chat).delete()
-
-    def addUser(self, id_chat: str, blocked: int):
-        with self.db.session_scope() as session:
-            select = session.query(UsersDB).filter(UsersDB.id_chat == id_chat).first()
-            if not select:
-                user = UsersDB(id_chat, blocked)
-                session.add(user)
-            else:
-                session.query(UsersDB).filter(UsersDB.id_chat == select.id_chat).update({'blocked': blocked})
-            session.commit()
 
     async def error_BotBlocked(self, update: types.Update, exception: BotBlocked):
         self.addUser(f'{update.message.chat.id}', 1)
@@ -32,13 +25,13 @@ class Errors:
         return True
 
     async def error_ChatNotFound(self, update: types.Update, exception: ChatNotFound):
-        self._deleteUser(update.message.chat.id)
+        self.deleteUser(update.message.chat.id)
 
         self.log.info(f"{exception}")
         return True
 
     async def error_UserDeactivated(self, update: types.Update, exception: UserDeactivated):
-        self._deleteUser(update.message.chat.id)
+        self.deleteUser(update.message.chat.id)
 
         self.log.info(f"{exception}")
         return True

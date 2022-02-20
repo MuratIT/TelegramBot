@@ -13,15 +13,15 @@ from classes.templates import Templates
 from classes.Broadcaster import Broadcaster
 from handlers.errors import Errors
 from handlers.client import Client
-from handlers.admin.create_buttons import CreateButtons
-from handlers.admin.create_post import CreatePost
 from handlers.admin.admin import Admin
+from handlers.admin.create_post import CreatePost
+from handlers.admin.create_buttons import CreateButtons
 
 
 strfmt = '[%(asctime)s] | [%(name)s] | [%(levelname)s] | %(message)s'
 datefmt = '%Y-%m-%d %H:%M:%S'
 
-logging.basicConfig(level=logging.INFO, format=strfmt, datefmt=datefmt, filename='logging.log')
+logging.basicConfig(level=logging.INFO, format=strfmt, datefmt=datefmt)
 
 
 class TelegramBot:
@@ -40,16 +40,12 @@ class TelegramBot:
 
         self.temp = Templates(self.bot, self.env)
 
-    async def on_startup(self, dp: Dispatcher):
-        error = Errors(self.db)
-        client = Client(self.db, self.keyboard, self.temp, error)
+    @staticmethod
+    async def Loads_filters(dp: Dispatcher):
+        for class_ in loadClasses('filters'):
+            dp.filters_factory.bind(class_)
 
-        create_buttons = CreateButtons(self.db, self.keyboard, self.temp)
-        create_post = CreatePost(self.db, self.keyboard, self.temp)
-        admin = Admin(self.db, self.bot, self.keyboard, self.temp)
-
-        await Broadcaster(self.bot, self.db, self.loop, self.keyboard, self.temp).run()
-
+    async def Loads_modules(self, dp: Dispatcher):
         for class_ in loadClasses('modules'):
             classes = class_(self.bot, self.db, self.loop, self.keyboard, self.temp)
 
@@ -61,12 +57,24 @@ class TelegramBot:
             if 'registerHandlers' in dir(classes):
                 classes.registerHandlers(dp)
 
+    async def on_startup(self, dp: Dispatcher):
+        error = Errors(self.bot, self.db, self.loop, self.keyboard, self.temp)
+        client = Client(self.bot, self.db, self.loop, self.keyboard, self.temp)
+        admin = Admin(self.bot, self.db, self.loop, self.keyboard, self.temp)
+        create_post = CreatePost(self.bot, self.db, self.loop, self.keyboard, self.temp)
+        create_buttons = CreateButtons(self.bot, self.db, self.loop, self.keyboard, self.temp)
+
+        await Broadcaster(self.bot, self.db, self.loop, self.keyboard, self.temp).run()
+
+        await self.Loads_filters(dp)
+
         error.registerHandlers(dp)
         client.registerHandlers(dp)
-
-        create_buttons.registerHandlers(dp)
-        create_post.registerHandlers(dp)
         admin.registerHandlers(dp)
+        create_post.registerHandlers(dp)
+        create_buttons.registerHandlers(dp)
+
+        await self.Loads_modules(dp)
 
     def run(self):
         executor.start_polling(self.dp, loop=self.loop, skip_updates=True, on_startup=self.on_startup)

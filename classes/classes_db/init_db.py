@@ -1,8 +1,8 @@
 import os
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.declarative import declarative_base
 
 
@@ -25,6 +25,17 @@ class InitDB:
         try:
             yield session
             session.commit()
+        except ValueError:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    @contextmanager
+    def select_session(self, objects: object):
+        session = Session(self.__engine).execute(select(objects))
+        try:
+            yield session
         except ValueError:
             session.rollback()
             raise

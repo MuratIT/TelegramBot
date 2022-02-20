@@ -1,0 +1,12 @@
+{
+  "exit": [
+    {"title":  "Назад", "callback_data": "exitAdmin", "url": false}
+  ],
+  "cancellation": [
+    {"title":  "Отмена", "callback_data": "cancellationAdmin", "url": false}
+  ],
+  "create_buttons_admin": [
+    {"title":  "Да", "callback_data": "createButtonYes", "url": false},
+    {"title":  "Нет", "callback_data": "createButtonNo", "url": false}
+  ]
+}

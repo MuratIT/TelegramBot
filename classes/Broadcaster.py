@@ -14,12 +14,15 @@ from classes.Keyboard import Keyboard
 from classes.classes_db import InitDB
 from classes.classes_db import UsersDB
 from classes.classes_db import PostDB
+from classes.functions import Functions
 
 
-class Broadcaster:
+class Broadcaster(Functions):
     def __init__(self, bot: Bot, db: InitDB,
                  loop: get_event_loop or set_event_loop,
                  Keyboards: Keyboard, temp: Templates):
+        
+        super(Broadcaster, self).__init__(bot, db, loop, Keyboards, temp)
 
         self.log = logging.getLogger('Broadcaster')
 
@@ -50,20 +53,6 @@ class Broadcaster:
             if item_type in expansion_document:
                 id_media.append(InputMediaDocument(item,
                                                    caption=caption if len(id_media) == 0 else None))
-
-    def __updateUser(self, id_chat: str, blocked: int):
-        with self.db.session_scope() as session:
-            select = session.query(UsersDB).filter(UsersDB.id_chat == id_chat).first()
-            if not select:
-                user = UsersDB(id_chat, blocked)
-                session.add(user)
-            else:
-                session.query(UsersDB).filter(UsersDB.id_chat == select.id_chat).update({'blocked': blocked})
-            session.commit()
-
-    def _deleteUser(self, id_chat: str):
-        with self.db.session_scope() as session:
-            session.query(UsersDB).filter(UsersDB.id_chat == id_chat).delete()
 
     def group_input_file(self, media_files: list, caption: str):
         id_media = list()
@@ -159,12 +148,12 @@ class Broadcaster:
             else:
                 await self.bot.send_message(id_chat, message, reply_markup=reply_markup)
         except BotBlocked:
-            self.__updateUser(id_chat, 1)
+            self.addUser(id_chat, 1)
         except ChatNotFound:
-            self._deleteUser(id_chat)
+            self.deleteUser(id_chat)
 
         except UserDeactivated:
-            self._deleteUser(id_chat)
+            self.deleteUser(id_chat)
 
         except TelegramAPIError as TAPI:
             self.log.error(TAPI)

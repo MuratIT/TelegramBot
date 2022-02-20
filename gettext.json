@@ -9,7 +9,7 @@
   "url_callback_button_error_validators":     "Ссылка не коректна! Укажите другую ссылку!",
   "url_callback_button_error_repeated":       "Такая ссылка уже используется! Укажите другую ссылку!",
   "time":                                     "Укажите время публикации!",
-  "time_error_validators":                    "данные о времени не соответствуют формату '%d.%m.%Y %H:%M:%S'",
+  "time_error_validators":                    "Данные о времени не соответствуют формату '%d.%m.%Y %H:%M:%S'",
   "time_error_repeated":                      "Такое время публикации уже есть, пожалуста укажите другое время!",
   "post_successfully":                        "Пост усешно опубликован!",
   "post_successfully_exit":                   "Успешно отменён!"
