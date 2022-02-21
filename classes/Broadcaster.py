@@ -132,8 +132,8 @@ class Broadcaster(Functions):
             reply_markup = self.Keyboards.inline(self.chJson(reply_markup))
             return reply_markup
 
-    async def __send(self, id_chat: str, message: str, media: str = None, id_media: str or InputFile = None,
-                     reply_markup: Keyboard.inline = None):
+    async def send(self, id_chat: str, message: str, media: str = None, id_media: str or InputFile = None,
+                   reply_markup: Keyboard.inline = None):
         try:
             if media == 'photo':
                 await self.bot.send_photo(id_chat, id_media, caption=message, reply_markup=reply_markup)
@@ -167,7 +167,7 @@ class Broadcaster(Functions):
             for item in select:
                 if item.blocked != 1:
                     text = self.temp.templates_text_only(text, await self.temp.temUser(item.id_chat))
-                    await self.__send(item.id_chat, text, media, id_media, self.reply_markup(reply_markup))
+                    await self.send(item.id_chat, text, media, id_media, self.reply_markup(reply_markup))
 
     async def __broadcaster(self):
         while True:
