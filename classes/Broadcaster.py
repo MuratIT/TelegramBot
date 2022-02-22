@@ -6,7 +6,7 @@ import random
 import json
 
 from aiogram.types import InputFile, InputMediaPhoto, InputMediaVideo, InputMediaAudio, InputMediaDocument
-from aiogram.utils.exceptions import BotBlocked, ChatNotFound, UserDeactivated, TelegramAPIError
+from aiogram.utils.exceptions import BotBlocked, BotKicked, ChatNotFound, UserDeactivated, TelegramAPIError
 from aiogram import Bot
 
 from classes.templates import Templates
@@ -14,6 +14,7 @@ from classes.Keyboard import Keyboard
 from classes.classes_db import InitDB
 from classes.classes_db import UsersDB
 from classes.classes_db import PostDB
+from classes.classes_db import ChannelChatDB
 from classes.functions import Functions
 
 
@@ -149,11 +150,17 @@ class Broadcaster(Functions):
                 await self.bot.send_message(id_chat, message, reply_markup=reply_markup)
         except BotBlocked:
             self.addUser(id_chat, 1)
+
+        except BotKicked:
+            self.addChannelChat(id_chat, 1)
+
         except ChatNotFound:
             self.deleteUser(id_chat)
+            self.deleteChannelChat(id_chat)
 
         except UserDeactivated:
             self.deleteUser(id_chat)
+            self.deleteChannelChat(id_chat)
 
         except TelegramAPIError as TAPI:
             self.log.error(TAPI)
@@ -165,9 +172,19 @@ class Broadcaster(Functions):
             select = session.query(UsersDB).all()
 
             for item in select:
-                if item.blocked != 1:
+                if item.blocked == 0:
                     text = self.temp.templates_text_only(text, await self.temp.temUser(item.id_chat))
                     await self.send(item.id_chat, text, media, id_media, self.reply_markup(reply_markup))
+
+    async def __sendChannelChat(self, text: str, media: str, reply_markup: str):
+        media, id_media = self.input_file(media, text)
+
+        with self.db.session_scope() as session:
+            select = session.query(ChannelChatDB).all()
+
+            for item in select:
+                if item.blocked == 0:
+                    await self.send(item.id_channel_chat, text, media, id_media, self.reply_markup(reply_markup))
 
     async def __broadcaster(self):
         while True:
@@ -181,8 +198,23 @@ class Broadcaster(Functions):
                     if select.checked == 0:
                         await self.__sendUsersAll(select.text, select.media, select.reply_markup)
                         session.query(PostDB).filter(PostDB.time == select.time).update(
-                            {'checked': 1, 'time': f'none:{random.randint(2344, 234432)}'})
+                            {'checked': 1, 'time': f'usersDB:id:{random.randint(2344, 234432)}'})
+                        session.commit()
+
+    async def __broadcasterChannelChat(self):
+        while True:
+            await asyncio.sleep(0.1)
+            time = datetime.today().strftime('%d.%m.%Y %H:%M:%S')
+            with self.db.session_scope() as session:
+                select = session.query(PostDB).filter(PostDB.time == time).first()
+
+                if select:
+                    if select.checked == 2:
+                        await self.__sendChannelChat(select.text, select.media, select.reply_markup)
+                        session.query(PostDB).filter(PostDB.time == select.time).update(
+                            {'checked': 3, 'time': f'ChannelChatDB:id:{random.randint(2344, 234432)}'})
                         session.commit()
 
     async def run(self):
         self.loop.create_task(self.__broadcaster())
+        self.loop.create_task(self.__broadcasterChannelChat())

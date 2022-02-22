@@ -1,4 +1,3 @@
-import os
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine
@@ -16,8 +15,7 @@ class InitDB:
         self.__session = sessionmaker(bind=self.__engine)
 
     def createDatabase(self):
-        if not os.path.exists(self.name):
-            self.Base.metadata.create_all(self.__engine)
+        self.Base.metadata.create_all(self.__engine)
 
     @contextmanager
     def session_scope(self):
